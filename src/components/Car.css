@@ -1,0 +1,9 @@
+.car {
+    position: absolute;
+    bottom: 20px;
+    width: 50px;
+    height: 100px;
+    background-color: blue;
+    border-radius: 10px;
+  }
+  
