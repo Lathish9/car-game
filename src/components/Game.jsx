@@ -13,19 +13,16 @@ export default function Game() {
   const [userInteracted, setUserInteracted] = useState(false);
 
   const playCrashSound = () => {
-    const crashAudio = new Audio('/crash.mp3');
-    crashAudio.play().catch(e => console.log('Audio play blocked:', e));
+    const crashAudio = new Audio(process.env.PUBLIC_URL + '/crash.mp3');
+    crashAudio.play().catch((e) => console.log('Sound blocked:', e));
   };
 
+  // Track first interaction (for autoplay audio policy)
   useEffect(() => {
-    const markInteraction = () => {
-      setUserInteracted(true);
-    };
-
+    const markInteraction = () => setUserInteracted(true);
     window.addEventListener('keydown', markInteraction);
     window.addEventListener('mousedown', markInteraction);
     window.addEventListener('touchstart', markInteraction);
-
     return () => {
       window.removeEventListener('keydown', markInteraction);
       window.removeEventListener('mousedown', markInteraction);
@@ -33,39 +30,41 @@ export default function Game() {
     };
   }, []);
 
+  // Keyboard controls
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (gameOver) return;
       if (e.key === 'ArrowLeft' && carPosition > 0) {
-        setCarPosition(pos => pos - 25);
+        setCarPosition((pos) => pos - 25);
       } else if (e.key === 'ArrowRight' && carPosition < GAME_WIDTH - 50) {
-        setCarPosition(pos => pos + 25);
+        setCarPosition((pos) => pos + 25);
       }
     };
-
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [carPosition, gameOver]);
 
+  // Obstacle movement
   useEffect(() => {
     if (gameOver) return;
 
     const interval = setInterval(() => {
-      setObstacle(obs => {
+      setObstacle((obs) => {
         const newTop = obs.top + 10;
 
-        // Collision
+        // Check collision
         if (newTop > 400 && Math.abs(obs.left - carPosition) < 50) {
           if (userInteracted) playCrashSound();
           setGameOver(true);
           return obs;
         }
 
+        // Reset obstacle
         if (newTop > GAME_HEIGHT) {
-          setScore(s => s + 1);
+          setScore((s) => s + 1);
           return {
             top: 0,
-            left: Math.floor(Math.random() * (GAME_WIDTH - 50))
+            left: Math.floor(Math.random() * (GAME_WIDTH - 50)),
           };
         }
 
@@ -83,16 +82,17 @@ export default function Game() {
     setGameOver(false);
   };
 
+  // Touch controls
   const moveLeft = () => {
-    if (carPosition > 0) setCarPosition(carPosition - 25);
+    if (carPosition > 0) setCarPosition((pos) => pos - 25);
   };
-
   const moveRight = () => {
-    if (carPosition < GAME_WIDTH - 50) setCarPosition(carPosition + 25);
+    if (carPosition < GAME_WIDTH - 50) setCarPosition((pos) => pos + 25);
   };
 
   return (
     <div style={{ width: GAME_WIDTH, margin: 'auto', textAlign: 'center' }}>
+      <h1>🕹️ React Car Game</h1>
       <h2>🚗 Score: {score}</h2>
 
       <div
@@ -100,10 +100,10 @@ export default function Game() {
           position: 'relative',
           width: GAME_WIDTH,
           height: GAME_HEIGHT,
-          backgroundColor: '#e0e0e0',
-          border: '2px solid #444',
+          backgroundColor: '#eee',
+          border: '2px solid #333',
           borderRadius: '10px',
-          overflow: 'hidden'
+          overflow: 'hidden',
         }}
       >
         {!gameOver ? (
@@ -118,37 +118,26 @@ export default function Game() {
               top: '40%',
               width: '100%',
               color: 'red',
-              fontSize: '24px'
+              fontSize: '24px',
             }}
           >
             <p>💥 Game Over!</p>
-            <button
-              onClick={restartGame}
-              style={{
-                padding: '10px 20px',
-                fontSize: '18px',
-                marginTop: '10px',
-                cursor: 'pointer'
-              }}
-            >
+            <button onClick={restartGame} style={buttonStyle}>
               Restart
             </button>
           </div>
         )}
       </div>
 
-      {/* Mobile Buttons */}
+      {/* Mobile Controls */}
       {!gameOver && (
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'center',
-            gap: '20px',
-            marginTop: '20px'
-          }}
-        >
-          <button onTouchStart={moveLeft} onClick={moveLeft} style={buttonStyle}>⬅️ Left</button>
-          <button onTouchStart={moveRight} onClick={moveRight} style={buttonStyle}>Right ➡️</button>
+        <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'center', gap: '20px' }}>
+          <button onClick={moveLeft} onTouchStart={moveLeft} style={buttonStyle}>
+            ⬅️ Left
+          </button>
+          <button onClick={moveRight} onTouchStart={moveRight} style={buttonStyle}>
+            Right ➡️
+          </button>
         </div>
       )}
     </div>
@@ -156,11 +145,11 @@ export default function Game() {
 }
 
 const buttonStyle = {
-  padding: '15px 25px',
+  padding: '10px 20px',
   fontSize: '18px',
-  backgroundColor: '#333',
+  backgroundColor: '#222',
   color: 'white',
   borderRadius: '10px',
   border: 'none',
-  cursor: 'pointer'
+  cursor: 'pointer',
 };
