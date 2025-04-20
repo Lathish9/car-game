@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 
 const obstacleImages = [
-  '/assets/rock.png',
-  '/assets/cone.png',
-  '/assets/barrier.png',
-  '/assets/oil.png'
+  '/rock.png',
+  '/cone.png',
+  '/barrier.png',
+  '/oil.png'
 ];
 
 export default function App() {
