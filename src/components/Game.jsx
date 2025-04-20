@@ -1,143 +1,124 @@
 import React, { useEffect, useState } from 'react';
-import Obstacle from './Obstacle'; // Import Obstacle component
-import Car from './Car'; // Assuming you have a Car component for player car
+import Car from './Car';
+import Obstacle from './Obstacle';
+import Highway from './Highway';
+import './Game.css';
 
-const Game = () => {
-  const [playerX, setPlayerX] = useState(150);
-  const playerY = 500;
-  const [obstacles, setObstacles] = useState([]);
+const GAME_WIDTH = 300;
+const GAME_HEIGHT = 500;
+
+export default function Game() {
+  const [carPosition, setCarPosition] = useState(125);
+  const [obstacle, setObstacle] = useState({ top: 0, left: 125 });
   const [gameOver, setGameOver] = useState(false);
   const [score, setScore] = useState(0);
+  const [userInteracted, setUserInteracted] = useState(false);
 
-  // Generate Random Obstacles including the Car Obstacle
+  const playCrashSound = () => {
+    const crashAudio = new Audio(process.env.PUBLIC_URL + '/crash.mp3');
+    crashAudio.play().catch((e) => console.log('Sound blocked:', e));
+  };
+
+  // Detect user interaction to allow audio
+  useEffect(() => {
+    const markInteraction = () => setUserInteracted(true);
+    window.addEventListener('keydown', markInteraction);
+    window.addEventListener('mousedown', markInteraction);
+    window.addEventListener('touchstart', markInteraction);
+    return () => {
+      window.removeEventListener('keydown', markInteraction);
+      window.removeEventListener('mousedown', markInteraction);
+      window.removeEventListener('touchstart', markInteraction);
+    };
+  }, []);
+
+  // Keyboard controls
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (gameOver) return;
+      if (e.key === 'ArrowLeft' && carPosition > 0) {
+        setCarPosition((pos) => pos - 25);
+      } else if (e.key === 'ArrowRight' && carPosition < GAME_WIDTH - 50) {
+        setCarPosition((pos) => pos + 25);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [carPosition, gameOver]);
+
+  // Obstacle logic
   useEffect(() => {
     if (gameOver) return;
-    const interval = setInterval(() => {
-      const newObstacle = {
-        id: Date.now(),
-        x: Math.floor(Math.random() * 350),
-        y: -60,
-        type: Math.floor(Math.random() * 5), // Random index for obstacle type
-      };
-      setObstacles((prev) => [...prev, newObstacle]);
-    }, 1500);
 
-    return () => clearInterval(interval);
-  }, [gameOver]);
-
-  // Move Obstacles + Score
-  useEffect(() => {
-    if (gameOver) return;
     const interval = setInterval(() => {
-      setObstacles((prev) => {
-        const updated = prev
-          .map((o) => ({ ...o, y: o.y + 5 }))
-          .filter((o) => o.y < 600);
-        setScore((s) => s + 1); // score increases every frame
-        return updated;
-      });
-    }, 30);
-    return () => clearInterval(interval);
-  }, [gameOver]);
+      setObstacle((obs) => {
+        const newTop = obs.top + 10;
 
-  // Collision Detection
-  useEffect(() => {
-    if (gameOver) return;
-    const interval = setInterval(() => {
-      obstacles.forEach((ob) => {
-        if (
-          playerX < ob.x + 50 &&
-          playerX + 50 > ob.x &&
-          playerY < ob.y + 50 &&
-          playerY + 50 > ob.y
-        ) {
+        // Collision
+        if (newTop > 400 && Math.abs(obs.left - carPosition) < 50) {
+          if (userInteracted) playCrashSound();
           setGameOver(true);
+          return obs;
         }
+
+        // Reset obstacle
+        if (newTop > GAME_HEIGHT) {
+          setScore((s) => s + 1);
+          return {
+            top: 0,
+            left: Math.floor(Math.random() * (GAME_WIDTH - 50)),
+          };
+        }
+
+        return { ...obs, top: newTop };
       });
     }, 100);
-    return () => clearInterval(interval);
-  }, [obstacles, playerX, gameOver]);
 
-  const handleRestart = () => {
-    setGameOver(false);
-    setObstacles([]);
+    return () => clearInterval(interval);
+  }, [carPosition, gameOver, userInteracted]);
+
+  const restartGame = () => {
+    setCarPosition(125);
+    setObstacle({ top: 0, left: 125 });
     setScore(0);
-    setPlayerX(150);
+    setGameOver(false);
+  };
+
+  // Mobile Controls
+  const moveLeft = () => {
+    if (carPosition > 0) setCarPosition((pos) => pos - 25);
+  };
+
+  const moveRight = () => {
+    if (carPosition < GAME_WIDTH - 50) setCarPosition((pos) => pos + 25);
   };
 
   return (
-    <div style={styles.gameContainer}>
-      {/* Player Car */}
-      <Car playerX={playerX} playerY={playerY} />
+    <div style={{ width: GAME_WIDTH, margin: 'auto', textAlign: 'center' }}>
+      <h1>🚗 React Car Game</h1>
+      <h2>🏁 Score: {score}</h2>
 
-      {/* Obstacles */}
-      {obstacles.map((ob) => (
-        <Obstacle key={ob.id} x={ob.x} y={ob.y} type={ob.type} />
-      ))}
+      <div className="game-container">
+        <Highway />
+        {!gameOver ? (
+          <>
+            <Car position={carPosition} />
+            <Obstacle top={obstacle.top} left={obstacle.left} />
+          </>
+        ) : (
+          <div className="game-over">
+            <p>💥 Game Over!</p>
+            <button onClick={restartGame} className="control-btn">Restart</button>
+          </div>
+        )}
+      </div>
 
-      {/* Score */}
-      <div style={styles.score}>Score: {score}</div>
-
-      {/* Game Over Overlay */}
-      {gameOver && (
-        <div style={styles.gameOverOverlay}>
-          <div style={styles.gameOverText}>GAME OVER</div>
-          <button onClick={handleRestart} style={styles.restartButton}>
-            Restart
-          </button>
+      {!gameOver && (
+        <div className="mobile-controls">
+          <button onClick={moveLeft} onTouchStart={moveLeft} className="control-btn">⬅️ Left</button>
+          <button onClick={moveRight} onTouchStart={moveRight} className="control-btn">Right ➡️</button>
         </div>
       )}
     </div>
   );
-};
-
-const styles = {
-  gameContainer: {
-    position: 'relative',
-    width: '400px',
-    height: '600px',
-    margin: 'auto',
-    backgroundColor: '#111',
-    overflow: 'hidden',
-    border: '5px solid #00ff99',
-    borderRadius: '10px',
-  },
-  gameOverOverlay: {
-    position: 'absolute',
-    top: '0',
-    left: '0',
-    width: '100%',
-    height: '100%',
-    backgroundColor: 'rgba(0,0,0,0.8)',
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 20,
-  },
-  gameOverText: {
-    color: 'white',
-    fontSize: '32px',
-    fontWeight: 'bold',
-    marginBottom: '20px',
-  },
-  restartButton: {
-    fontSize: '18px',
-    padding: '10px 20px',
-    backgroundColor: '#00ff99',
-    border: 'none',
-    borderRadius: '8px',
-    cursor: 'pointer',
-  },
-  score: {
-    position: 'absolute',
-    top: '10px',
-    left: '10px',
-    color: 'white',
-    fontSize: '20px',
-    fontWeight: 'bold',
-    zIndex: 15,
-  },
-};
-
-export default Game;
+}

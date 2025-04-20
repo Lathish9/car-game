@@ -1,20 +1,17 @@
 import React from 'react';
 
-const Car = ({ playerX, playerY }) => {
+export default function Car({ position }) {
   return (
     <img
-      src="/car.png"
-      alt="player car"
+      src={`${process.env.PUBLIC_URL}/car.png`}
+      alt="Car"
       style={{
         position: 'absolute',
-        top: playerY,
-        left: playerX,
-        width: '50px',
-        height: '50px',
-        zIndex: 10,
+        bottom: 10,
+        left: position,
+        width: 50,
+        height: 100,
       }}
     />
   );
-};
-
-export default Car;
+}
